@@ -1,4 +1,4 @@
-
++types
 *.mat
 *.asv
 *.txt
@@ -6,3 +6,5 @@
 *.xlsx
 *.nwb
 *.zip
+*.h5
+*.tif
