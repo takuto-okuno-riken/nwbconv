@@ -225,21 +225,36 @@ function processInputFiles(handles)
                 if r > size(C,1) || ~strcmp(C{r,1},'Regions of interest')
                     break;
                 end
-                isdata=1;
+                isdata=1; additional=0;
                 if (length(C{r+4,c})==1&&ismissing(C{r+4,c}))||isempty(C{r+4,c}), isdata=0; end
                 if isdata
+                    % check colnames
+                    colnames = parseColnames(C{r+2,c});
+                    colD = {};
+                    for j=2:length(colnames)
+                        colD{j} = parseReadFile(C{r+3+j,c},1);
+                    end
+
                     % read ROI masks
                     image_mask = parseReadFile(C{r+4,c},3);
                     n_rois = size(image_mask, 3);
                     ids = 0:(n_rois-1);
-                    colnames = C{r+2,c};
+                    additional = length(colnames) - 1;
                     plane_segmentation = types.core.PlaneSegmentation( ...
-                        'colnames', {colnames}, ...
+                        'colnames', colnames, ...
                         'description', C{r+1,c}, ...
                         'id', types.hdmf_common.ElementIdentifiers('data', ids), ...
-                        'imaging_plane', imaging_plane);
+                        'imaging_plane', types.untyped.SoftLink('/general/optophysiology/imaging_plane'));
                     plane_segmentation.image_mask = types.hdmf_common.VectorData( ...
                         'data', image_mask, 'description', 'image masks');
+                    varargin = {};
+                    for j=2:length(colnames)
+                        varargin{end+1} = colnames{j};
+                        varargin{end+1} = types.hdmf_common.VectorData('data', colD{j}, 'description', [colnames{j} ' for ROI']);
+                    end
+                    if ~isempty(varargin)
+                        [plane_segmentation.vectordata, ivarargin] = types.util.parseConstrained(plane_segmentation, 'vectordata', 'types.hdmf_common.VectorData', varargin{:});
+                    end
 
                     img_seg = types.core.ImageSegmentation();
                     img_seg.planesegmentation.set('PlaneSegmentation', plane_segmentation);
@@ -247,7 +262,7 @@ function processInputFiles(handles)
                     ophys_module.nwbdatainterface.set('ImageSegmentation', img_seg);
                     nwb.processing.set('ophys', ophys_module);
                 end
-                r = r + ROI_ROWS;
+                r = r + ROI_ROWS + additional;
             end
 
             % ROI : Response Series
@@ -270,8 +285,8 @@ function processInputFiles(handles)
                         'rois', roi_table_region, ...
                         'data', series_data, ...
                         'data_unit', C{r+3,c}, ...
-                        'starting_time_rate', C{r+4,c}, ...
-                        'starting_time', C{r+5,c});
+                        'starting_time', C{r+4,c}, ...
+                        'starting_time_rate', C{r+5,c});
                     fluorescence = types.core.Fluorescence();
                     fluorescence.roiresponseseries.set('RoiResponseSeries', roi_response_series);
                     ophys_module.nwbdatainterface.set('Fluorescence', fluorescence);
@@ -384,19 +399,26 @@ function [start_time, stop_time, colDout] = convertSequenceToStartStop(colD, rat
 
     % convert
     lastcue = 0; % cueseries(1); TODO:
-    for i=2:length(cueseries)
+    for i=1:length(cueseries)
         if cueseries(i) ~= lastcue
             if length(start_time) > length(stop_time)
-                stop_time = [stop_time; i / rate];
+                stop_time = [stop_time; (i-1) / rate];
                 for j=3:length(colD)
                     A = colD{j}(start_i:i);
                     colDout{j} = [colDout{j}; mode(A)];
                 end
             else
-                start_time = [start_time; i / rate];
+                start_time = [start_time; (i-1) / rate];
                 start_i = i;
             end
             lastcue = cueseries(i);
+        end
+    end
+    if length(start_time) > length(stop_time)
+        stop_time = [stop_time; i / rate];
+        for j=3:length(colD)
+            A = colD{j}(start_i:i);
+            colDout{j} = [colDout{j}; mode(A)];
         end
     end
     disp(['converting cue time series with time rate : ' num2str(rate)]);
