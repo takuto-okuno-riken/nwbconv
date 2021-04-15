@@ -199,7 +199,7 @@ function processInputFiles(handles)
             imaging_plane = types.core.ImagingPlane( ...
                 'optical_channel', optical_channel, ...
                 'description', C{r+1,c}, ...
-                'device', device, ...
+                'device', types.untyped.SoftLink('/general/devices/Device'), ...
                 'excitation_lambda', C{r+2,c}, ...
                 'indicator', C{r+3,c}, ...
                 'location', C{r+4,c});
@@ -507,29 +507,48 @@ function data = parseFieldNames(f, fieldName, itemNames, catDim)
             N = strsplit(F{2},')');
         end
         % parse number
+        dim1 = []; dim2 = [];
         st = 1;
         en = length(f.(F{1}));
-        R = strsplit(N{1},':');
+        R = strsplit(N{1},'-');
         if length(R) > 1
             st = str2num(R{1});
             en = str2num(R{2});
         elseif length(R{1}) > 0
-            st = str2num(R{1});
-            en = str2num(R{1});
+            if contains(R{1}, ',')
+                D = strsplit(R{1},',');
+                dim1 = str2num(D{1});
+                dim2 = str2num(D{2});
+            else
+                st = str2num(R{1});
+                en = str2num(R{1});
+            end
         end
         % parse field
-        for ii=st:en
-            if iscell
-                f2 = f.(F{1}){ii};
-            else
-                f2 = f.(F{1})(ii);
+        if isempty(dim1) && isempty(dim2)
+            for ii=st:en
+                if iscell
+                    f2 = f.(F{1}){ii};
+                else
+                    f2 = f.(F{1})(ii);
+                end
+                if isempty(itemNames)
+                    d = f2;
+                else
+                    d = parseFieldNames(f2, itemNames{1}, itemNames(2:end), catDim);
+                end
+                data = cat(catDim, data, d);
             end
-            if isempty(itemNames)
-                d = f2;
+        else
+            % should be matrix data
+            if isempty(dim1)
+                d = f.(F{1})(:,dim2);
+            elseif isempty(dim2)
+                d = f.(F{1})(dim1,:);
             else
-                d = parseFieldNames(f2, itemNames{1}, itemNames(2:end), catDim);
+                d = f.(F{1})(dim1,dim2);
             end
-            data = cat(catDim, data, d);
+            data = d;
         end
     else
         if isempty(itemNames)
