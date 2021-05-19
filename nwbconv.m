@@ -434,6 +434,8 @@ function data = parseReadFile(str, catDim)
     data = [];
     fileName = [];
     transpose = 0;
+    logicalTh = [];
+    remove = [];
 
     % command extraction
     command = strsplit(str,'#');
@@ -443,6 +445,17 @@ function data = parseReadFile(str, catDim)
             catDim = str2num(C{2});
         elseif contains(command{j}, 'transpose') 
             transpose = 1;
+        elseif contains(command{j}, 'remove') 
+            C = strsplit(command{j},'=');
+            D = strsplit(C{2},',');
+            dim = str2num(D{1});
+            E = strsplit(D{2},':');
+            st = str2num(E{1});
+            if length(E)>1, ed=str2num(E{2}); else, ed=st; end
+            remove = [dim, st, ed];
+        elseif contains(command{j}, 'logical') 
+            C = strsplit(command{j},'=');
+            logicalTh = str2num(C{2});
         end
     end
 
@@ -476,13 +489,35 @@ function data = parseReadFile(str, catDim)
                 d(:,:,n) = tstack.read();
             end
             data = cat(catDim, data, d);
+        elseif contains(fileName,'.png')
+            d = imread(fileName);
+            data = cat(catDim, data, d);
+        elseif contains(fileName,'.csv')
+            d = readmatrix(fileName);
+            data = cat(catDim, data, d);
         end
     end
     % other operation
+    if ~isempty(remove)
+        switch remove(1)
+        case 1
+            if ndims(data)==2, data(remove(2):remove(3),:) = []; end
+            if ndims(data)==3, data(remove(2):remove(3),:,:) = []; end
+        case 2
+            if ndims(data)==2, data(:,remove(2):remove(3)) = []; end
+            if ndims(data)==3, data(:,remove(2):remove(3),:) = []; end
+        case 3
+            if ndims(data)==3, data(:,:,remove(2):remove(3)) = []; end
+        end
+    end
     if transpose
         order = [2 1];
         for j=3:length(size(data)), order=[order j]; end
         data = permute(data,order);
+    end
+    if ~isempty(logicalTh)
+        data(data<logicalTh) = 0;
+        data = logical(data);
     end
 
     % check data
