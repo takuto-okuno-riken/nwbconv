@@ -25,7 +25,7 @@ usage: nwbconv [options] filename.xlsx ...
 
 ## Command line tool Demo
 ~~~
->> nwbconv ori099_ch_rp.xlsx
+>> nwbconv ori099_ch.xlsx
 success to load data : ori099_ch.mat:stack
 success to load data : logfile_M99_ori099.mat:TS.stim_log
 success to load data : logfile_M99_ori099.mat:TS.start_time
