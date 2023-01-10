@@ -1,16 +1,22 @@
 # nwbconv
- NWB format convert tool
+ NWB format convert tool.
+ This tool could generate a NWB format file from an excel template file and raw image files.
  
 ## Requirements: software
 * MATLAB R2019a or later
 
-## setup matnwb
+## Installation
+1. Run the MATLAB software, and setup the [MatNWB](https://github.com/NeurodataWithoutBorders/matnwb) toolbox. 
 ~~~
 !git clone https://github.com/NeurodataWithoutBorders/matnwb.git
 cd matnwb
 addpath(genpath(pwd));
 generateCore();
 ~~~
+2. Download [nwbconv](https://github.com/takuto-okuno-riken/nwbconv/archive/refs/heads/main.zip) zip file.
+3. Extract zip file under your working directory <work_path>.
+4. "Add Path" extracted directories (i.e. <work_path>/nwbconv-main).
+5. Move to <work_path>/nwbconv-main directory and fill out excel template file with your imaging data.
 
 ## Command line tool
 ~~~
