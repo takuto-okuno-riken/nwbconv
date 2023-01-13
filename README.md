@@ -1,3 +1,4 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-success.svg)](https://opensource.org/licenses/MIT)
 # nwbconv
  NWB format convert tool.
  This tool could generate a NWB format file from an excel template file and raw image files.
